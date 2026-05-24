@@ -4,11 +4,12 @@ using System.Collections.Generic;
 public class GameManager : MonoBehaviour
 {
     [Header("Setup")]
-    public List<Sprite> foodSprites; //Les 15 aliments
+    public List<Sprite> foodSprites;
     public GameObject cardPrefab;
     public Transform gridParent;
 
-    private List<Card> spawnedCards = new List<Card>();
+    [Header("End UI")]
+    public LevelEndUI endUI;
 
     private Card firstCard;
     private Card secondCard;
@@ -23,16 +24,19 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        SetupGame();    
+        SetupGame();
     }
 
     void SetupGame()
     {
         List<Sprite> temp = new List<Sprite>(foodSprites);
 
-        Shuffle(temp);
+        for (int i = 0; i < temp.Count; i++)
+        {
+            int rand = Random.Range(i, temp.Count);
+            (temp[i], temp[rand]) = (temp[rand], temp[i]);
+        }
 
-        // Choisir 12 aliments
         List<Sprite> selected = temp.GetRange(0, 12);
 
         List<(int, Sprite)> cardData = new List<(int, Sprite)>();
@@ -46,28 +50,18 @@ public class GameManager : MonoBehaviour
             idCounter++;
         }
 
-        // Shuffle les cartes apres faire les paires
-        Shuffle(cardData);
+        for (int i = 0; i < cardData.Count; i++)
+        {
+            int rand = Random.Range(i, cardData.Count);
+            (cardData[i], cardData[rand]) = (cardData[rand], cardData[i]);
+        }
 
-        // Charger les cartes
         foreach (var data in cardData)
         {
             GameObject obj = Instantiate(cardPrefab, gridParent);
             Card card = obj.GetComponent<Card>();
 
             card.SetCard(data.Item1, data.Item2);
-        }
-    }
-
-    void Shuffle<T>(List<T> list)
-    {
-        for (int i = 0; i < list.Count; i++)
-        {
-            int rand = Random.Range(i, list.Count);
-
-            T temp = list[i];
-            list[i] = list[rand];
-            list[rand] = temp;
         }
     }
 
@@ -98,12 +92,12 @@ public class GameManager : MonoBehaviour
         if (firstCard.id == secondCard.id)
         {
             pairesTrouve++;
-            
+
             audioSource.PlayOneShot(matchSound);
 
             if (pairesTrouve >= pairesTotale)
             {
-                Debug.Log("Tu as gagné!!!");
+                endUI.ShowEndPanel();
             }
         }
         else
@@ -117,26 +111,18 @@ public class GameManager : MonoBehaviour
         canFlip = true;
     }
 
-        public void RestartGame()
+    public void RestartGame()
     {
-        // Détruire toutes les cartes
         foreach (Transform child in gridParent)
         {
             Destroy(child.gameObject);
         }
 
-        // Reset les variables (on aime pas les exploiteurs)
         pairesTrouve = 0;
         firstCard = null;
         secondCard = null;
         canFlip = true;
 
-        // Recommence
         SetupGame();
-    }
-
-    void Update()
-    {
-        
     }
 }
